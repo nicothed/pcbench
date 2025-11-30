@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Benchmark Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #eaeaea;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            color: #e94560;
+            text-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+            margin-bottom: 2px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .settings-panel {
+            background: rgba(15, 52, 96, 0.5);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting-group label {
+            font-weight: 600;
+            color: #00d9ff;
+            font-size: 0.85rem;
+        }
+
+        .setting-group input[type="number"] {
+            width: 60px;
+            padding: 6px 10px;
+            border: 2px solid #e94560;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .setting-group input[type="number"]:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            padding: 8px 25px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+        }
+
+        .start-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .overall-progress {
+            background: rgba(15, 52, 96, 0.5);
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(0, 217, 255, 0.3);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        .time-display {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #00d9ff;
+        }
+
+        .progress-bar-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            height: 16px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #ff6b6b, #00d9ff);
+            background-size: 200% 100%;
+            animation: gradientMove 2s ease infinite;
+            border-radius: 10px;
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .tests-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .test-card {
+            background: rgba(15, 52, 96, 0.6);
+            border-radius: 8px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .test-card.active {
+            border-color: #e94560;
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.3);
+        }
+
+        .test-card.complete {
+            border-color: #00d9ff;
+        }
+
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .test-name {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .test-icon {
+            font-size: 1.1rem;
+        }
+
+        .test-score {
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .test-score.active {
+            color: #e94560;
+        }
+
+        .test-score.complete {
+            color: #00d9ff;
+        }
+
+        .test-progress-bar {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            height: 5px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .test-progress-fill {
+            height: 100%;
+            background: #e94560;
+            border-radius: 4px;
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+
+        .test-card.complete .test-progress-fill {
+            background: #00d9ff;
+        }
+
+        .test-details {
+            font-family: 'Consolas', monospace;
+            font-size: 0.7rem;
+            color: #00d9ff;
+            min-height: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .final-score-panel {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(0, 217, 255, 0.2));
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+            text-align: center;
+            border: 2px solid transparent;
+            display: none;
+        }
+
+        .final-score-panel.visible {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .final-score-label {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 2px;
+        }
+
+        .final-score-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #e94560, #00d9ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .final-score-max {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .rating {
+            font-size: 1rem;
+            margin-top: 8px;
+            padding: 5px 15px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        .rating.excellent { background: rgba(255, 215, 0, 0.2); color: #ffd700; }
+        .rating.great { background: rgba(0, 255, 0, 0.2); color: #00ff00; }
+        .rating.good { background: rgba(0, 217, 255, 0.2); color: #00d9ff; }
+        .rating.average { background: rgba(255, 170, 0, 0.2); color: #ffaa00; }
+        .rating.low { background: rgba(255, 102, 102, 0.2); color: #ff6666; }
+
+        .score-breakdown {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .breakdown-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px 5px;
+            border-radius: 6px;
+        }
+
+        .breakdown-name {
+            font-size: 0.65rem;
+            color: #888;
+            margin-bottom: 2px;
+        }
+
+        .breakdown-score {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #00d9ff;
+        }
+
+        /* Hidden canvas for GPU tests */
+        #gpuCanvas {
+            position: absolute;
+            left: -9999px;
+            width: 800px;
+            height: 600px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 10px;
+            color: #555;
+            font-size: 0.75rem;
+        }
+
+        .system-info-panel {
+            background: rgba(15, 52, 96, 0.5);
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(0, 217, 255, 0.3);
+        }
+
+        .system-info-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #00d9ff;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .system-info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .info-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 6px 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .info-label {
+            display: block;
+            font-size: 0.6rem;
+            color: #888;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            display: block;
+            font-size: 0.75rem;
+            color: #eaeaea;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.4rem; }
+            .score-breakdown { grid-template-columns: repeat(3, 1fr); }
+            .final-score-value { font-size: 2rem; }
+            .system-info-grid { grid-template-columns: repeat(2, 1fr); }
+            .tests-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ PC Benchmark Tool ⚡</h1>
+            <p class="subtitle">Comprehensive Browser-Based Performance Analysis</p>
+        </header>
+
+        <div class="system-info-panel" id="systemInfoPanel">
+            <div class="system-info-title">📋 System Information</div>
+            <div class="system-info-grid" id="systemInfoGrid">
+                <div class="info-item">
+                    <span class="info-label">OS</span>
+                    <span class="info-value" id="info-os">Detecting...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Browser</span>
+                    <span class="info-value" id="info-browser">Detecting...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">CPU Cores</span>
+                    <span class="info-value" id="info-cores">Detecting...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">RAM</span>
+                    <span class="info-value" id="info-ram">Detecting...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Storage</span>
+                    <span class="info-value" id="info-storage">Detecting...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Screen</span>
+                    <span class="info-value" id="info-screen">Detecting...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">GPU</span>
+                    <span class="info-value" id="info-gpu">Detecting...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Connection</span>
+                    <span class="info-value" id="info-connection">Detecting...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-panel">
+            <div class="settings-row">
+                <div class="setting-group">
+                    <label for="duration">Test Duration:</label>
+                    <input type="number" id="duration" value="10" min="5" max="120"> 
+                    <span>seconds</span>
+                </div>
+                <button class="start-btn" id="startBtn" onclick="startBenchmark()">
+                    ▶ Start Benchmark
+                </button>
+            </div>
+        </div>
+
+        <div class="overall-progress">
+            <div class="progress-header">
+                <span>Overall Progress</span>
+                <span class="time-display" id="timeDisplay">0.0s / 10.0s</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="overallProgress"></div>
+            </div>
+        </div>
+
+        <div class="tests-grid">
+            <div class="test-card" id="card-cpu">
+                <div class="test-header">
+                    <span class="test-name"><span class="test-icon">🖥️</span> CPU</span>
+                    <span class="test-score" id="score-cpu">Waiting...</span>
+                </div>
+                <div class="test-progress-bar">
+                    <div class="test-progress-fill" id="progress-cpu"></div>
+                </div>
+                <div class="test-details" id="details-cpu">Mathematical computations & matrix operations</div>
+            </div>
+
+            <div class="test-card" id="card-gpu">
+                <div class="test-header">
+                    <span class="test-name"><span class="test-icon">🎮</span> GPU</span>
+                    <span class="test-score" id="score-gpu">Waiting...</span>
+                </div>
+                <div class="test-progress-bar">
+                    <div class="test-progress-fill" id="progress-gpu"></div>
+                </div>
+                <div class="test-details" id="details-gpu">WebGL rendering & shader operations</div>
+            </div>
+
+            <div class="test-card" id="card-ram">
+                <div class="test-header">
+                    <span class="test-name"><span class="test-icon">💾</span> RAM</span>
+                    <span class="test-score" id="score-ram">Waiting...</span>
+                </div>
+                <div class="test-progress-bar">
+                    <div class="test-progress-fill" id="progress-ram"></div>
+                </div>
+                <div class="test-details" id="details-ram">Memory bandwidth & allocation tests</div>
+            </div>
+
+            <div class="test-card" id="card-disk">
+                <div class="test-header">
+                    <span class="test-name"><span class="test-icon">💿</span> Storage</span>
+                    <span class="test-score" id="score-disk">Waiting...</span>
+                </div>
+                <div class="test-progress-bar">
+                    <div class="test-progress-fill" id="progress-disk"></div>
+                </div>
+                <div class="test-details" id="details-disk">IndexedDB read/write performance</div>
+            </div>
+
+            <div class="test-card" id="card-display">
+                <div class="test-header">
+                    <span class="test-name"><span class="test-icon">🖼️</span> Display</span>
+                    <span class="test-score" id="score-display">Waiting...</span>
+                </div>
+                <div class="test-progress-bar">
+                    <div class="test-progress-fill" id="progress-display"></div>
+                </div>
+                <div class="test-details" id="details-display">Canvas rendering & animation performance</div>
+            </div>
+
+            <div class="test-card" id="card-network">
+                <div class="test-header">
+                    <span class="test-name"><span class="test-icon">🌐</span> Network</span>
+                    <span class="test-score" id="score-network">Waiting...</span>
+                </div>
+                <div class="test-progress-bar">
+                    <div class="test-progress-fill" id="progress-network"></div>
+                </div>
+                <div class="test-details" id="details-network">Download speed & latency measurement</div>
+            </div>
+        </div>
+
+        <div class="final-score-panel" id="finalScorePanel">
+            <div class="final-score-label">FINAL SCORE</div>
+            <div class="final-score-value" id="finalScoreValue">0</div>
+            <div class="final-score-max">out of 1,000</div>
+            <div class="rating" id="ratingBadge">Loading...</div>
+            <div class="score-breakdown" id="scoreBreakdown"></div>
+        </div>
+
+        <footer></footer>
+    </div>
+
+    <canvas id="gpuCanvas"></canvas>
+
+    <script>
+        // Utility: Format number with commas
+        function formatNumber(num) {
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // Benchmark state
+        let isRunning = false;
+        let totalDuration = 10;
+        let startTime = 0;
+        let results = {};
+
+        const TESTS = ['cpu', 'gpu', 'ram', 'disk', 'display', 'network'];
+        
+        // Normalization constants (calibrated for typical hardware ranges)
+        // These map raw scores to a 0-200 range per test (5 scored tests = 1000 max)
+        // Network runs but is excluded from final score
+        // Calibrated so mid-range hardware scores ~100 points per test
+        const SCORE_CALIBRATION = {
+            cpu: { min: 100000, max: 4200000000 },  // 2.1B ops/sec = ~100 pts
+            gpu: { min: 100, max: 3950 },           // 2025 (202 FPS * 10K tris) = ~100 pts
+            ram: { min: 500, max: 11500 },          // 6000 MB/s = ~100 pts
+            disk: { min: 5, max: 1923 },            // 964 MB/s = ~100 pts
+            display: { min: 30, max: 206 },         // 117.8 FPS = ~100 pts
+            network: { min: 1, max: 119 }           // 60 Mbps = ~100 pts (not scored)
+        };
+
+        function normalizeScore(testName, rawScore) {
+            const cal = SCORE_CALIBRATION[testName];
+            const normalized = (rawScore - cal.min) / (cal.max - cal.min);
+            const clamped = Math.max(0, Math.min(1, normalized));
+            // 5 scored tests * 200 = 1000 max (network excluded from score)
+            return Math.round(clamped * 200);
+        }
+
+        function updateUI(testName, progress, rawScore, detail) {
+            const progressBar = document.getElementById(`progress-${testName}`);
+            const scoreEl = document.getElementById(`score-${testName}`);
+            const detailsEl = document.getElementById(`details-${testName}`);
+            const card = document.getElementById(`card-${testName}`);
+
+            if (progressBar) progressBar.style.width = `${progress * 100}%`;
+            if (detail && detailsEl) detailsEl.textContent = detail;
+            
+            if (progress > 0 && progress < 1) {
+                card.classList.add('active');
+                card.classList.remove('complete');
+                scoreEl.classList.add('active');
+                scoreEl.classList.remove('complete');
+                scoreEl.textContent = 'Testing...';
+            } else if (progress >= 1 && rawScore !== null) {
+                card.classList.remove('active');
+                card.classList.add('complete');
+                scoreEl.classList.remove('active');
+                scoreEl.classList.add('complete');
+                const normalized = normalizeScore(testName, rawScore);
+                scoreEl.textContent = `${formatNumber(normalized)} pts`;
+                results[testName] = { raw: rawScore, normalized };
+            }
+        }
+
+        function updateOverallProgress(elapsed) {
+            const progress = Math.min(elapsed / totalDuration, 1);
+            document.getElementById('overallProgress').style.width = `${progress * 100}%`;
+            document.getElementById('timeDisplay').textContent = 
+                `${elapsed.toFixed(1)}s / ${totalDuration.toFixed(1)}s`;
+        }
+
+        // CPU Benchmark
+        async function benchmarkCPU(duration) {
+            const testStart = performance.now();
+            let operations = 0;
+            
+            while ((performance.now() - testStart) / 1000 < duration) {
+                const iterStart = performance.now();
+                
+                // Prime number sieve
+                const sieveSize = 10000;
+                const sieve = new Uint8Array(sieveSize);
+                for (let i = 2; i < sieveSize; i++) {
+                    if (!sieve[i]) {
+                        for (let j = i * 2; j < sieveSize; j += i) {
+                            sieve[j] = 1;
+                        }
+                    }
+                }
+                operations += sieveSize;
+
+                // Matrix multiplication (64x64)
+                const size = 64;
+                const matA = new Float64Array(size * size);
+                const matB = new Float64Array(size * size);
+                const matC = new Float64Array(size * size);
+                
+                for (let i = 0; i < size * size; i++) {
+                    matA[i] = Math.random();
+                    matB[i] = Math.random();
+                }
+                
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        let sum = 0;
+                        for (let k = 0; k < size; k++) {
+                            sum += matA[i * size + k] * matB[k * size + j];
+                        }
+                        matC[i * size + j] = sum;
+                    }
+                }
+                operations += size * size * size * 2;
+
+                // Trigonometric calculations
+                for (let i = 0; i < 5000; i++) {
+                    const x = Math.sin(i) * Math.cos(i) * Math.tan(i % 89 + 1);
+                    const y = Math.sqrt(Math.abs(x)) * Math.log(Math.abs(x) + 1);
+                    operations += 6;
+                }
+
+                const elapsed = (performance.now() - testStart) / 1000;
+                const progress = Math.min(elapsed / duration, 1);
+                const opsPerSec = operations / elapsed;
+                
+                updateUI('cpu', progress, null, 
+                    `Operations: ${formatNumber(operations)} | ${formatNumber(opsPerSec)} ops/sec`);
+                
+                // Yield to prevent UI freeze
+                if (performance.now() - iterStart > 50) {
+                    await new Promise(r => setTimeout(r, 0));
+                }
+            }
+
+            const finalElapsed = (performance.now() - testStart) / 1000;
+            const opsPerSec = operations / finalElapsed;
+            updateUI('cpu', 1, opsPerSec, `Final: ${formatNumber(opsPerSec)} ops/sec`);
+            return opsPerSec;
+        }
+
+        // GPU Benchmark (WebGL)
+        async function benchmarkGPU(duration) {
+            const canvas = document.getElementById('gpuCanvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            
+            if (!gl) {
+                updateUI('gpu', 1, SCORE_CALIBRATION.gpu.min, 'WebGL not supported');
+                return SCORE_CALIBRATION.gpu.min;
+            }
+
+            // Vertex shader
+            const vsSource = `
+                attribute vec4 aPosition;
+                attribute vec4 aColor;
+                varying vec4 vColor;
+                uniform mat4 uMatrix;
+                void main() {
+                    gl_Position = uMatrix * aPosition;
+                    vColor = aColor;
+                }
+            `;
+
+            // Fragment shader
+            const fsSource = `
+                precision mediump float;
+                varying vec4 vColor;
+                void main() {
+                    gl_FragColor = vColor;
+                }
+            `;
+
+            function compileShader(gl, source, type) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                return shader;
+            }
+
+            const vs = compileShader(gl, vsSource, gl.VERTEX_SHADER);
+            const fs = compileShader(gl, fsSource, gl.FRAGMENT_SHADER);
+            
+            const program = gl.createProgram();
+            gl.attachShader(program, vs);
+            gl.attachShader(program, fs);
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            // Create geometry (lots of triangles)
+            const triangleCount = 10000;
+            const vertices = new Float32Array(triangleCount * 9);
+            const colors = new Float32Array(triangleCount * 12);
+
+            for (let i = 0; i < triangleCount; i++) {
+                const cx = Math.random() * 2 - 1;
+                const cy = Math.random() * 2 - 1;
+                const size = 0.02 + Math.random() * 0.03;
+                
+                vertices[i * 9 + 0] = cx;
+                vertices[i * 9 + 1] = cy + size;
+                vertices[i * 9 + 2] = 0;
+                vertices[i * 9 + 3] = cx - size;
+                vertices[i * 9 + 4] = cy - size;
+                vertices[i * 9 + 5] = 0;
+                vertices[i * 9 + 6] = cx + size;
+                vertices[i * 9 + 7] = cy - size;
+                vertices[i * 9 + 8] = 0;
+
+                const r = Math.random();
+                const g = Math.random();
+                const b = Math.random();
+                for (let j = 0; j < 3; j++) {
+                    colors[i * 12 + j * 4 + 0] = r;
+                    colors[i * 12 + j * 4 + 1] = g;
+                    colors[i * 12 + j * 4 + 2] = b;
+                    colors[i * 12 + j * 4 + 3] = 1;
+                }
+            }
+
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+            
+            const positionLoc = gl.getAttribLocation(program, 'aPosition');
+            gl.enableVertexAttribArray(positionLoc);
+            gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
+
+            const colorBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+            
+            const colorLoc = gl.getAttribLocation(program, 'aColor');
+            gl.enableVertexAttribArray(colorLoc);
+            gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+
+            const matrixLoc = gl.getUniformLocation(program, 'uMatrix');
+
+            const testStart = performance.now();
+            let frames = 0;
+
+            while ((performance.now() - testStart) / 1000 < duration) {
+                const time = performance.now() / 1000;
+                
+                // Rotation matrix
+                const angle = time * 0.5;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                const matrix = new Float32Array([
+                    cos, sin, 0, 0,
+                    -sin, cos, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                ]);
+                
+                gl.uniformMatrix4fv(matrixLoc, false, matrix);
+                gl.clearColor(0.1, 0.1, 0.15, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.drawArrays(gl.TRIANGLES, 0, triangleCount * 3);
+                gl.finish();
+                
+                frames++;
+                
+                const elapsed = (performance.now() - testStart) / 1000;
+                const progress = Math.min(elapsed / duration, 1);
+                const fps = frames / elapsed;
+                
+                updateUI('gpu', progress, null, 
+                    `Triangles: ${formatNumber(triangleCount)} | Frames: ${formatNumber(frames)} | ${fps.toFixed(1)} FPS`);
+                
+                await new Promise(r => setTimeout(r, 0));
+            }
+
+            const finalElapsed = (performance.now() - testStart) / 1000;
+            const fps = frames / finalElapsed;
+            const score = triangleCount * fps / 1000; // Weighted score
+            
+            updateUI('gpu', 1, score, `Final: ${fps.toFixed(1)} FPS @ ${formatNumber(triangleCount)} triangles`);
+            
+            // Cleanup
+            gl.deleteBuffer(positionBuffer);
+            gl.deleteBuffer(colorBuffer);
+            gl.deleteProgram(program);
+            gl.deleteShader(vs);
+            gl.deleteShader(fs);
+            
+            return score;
+        }
+
+        // RAM Benchmark
+        async function benchmarkRAM(duration) {
+            const testStart = performance.now();
+            let totalBytes = 0;
+            const blockSize = 16 * 1024 * 1024; // 16 MB blocks
+
+            while ((performance.now() - testStart) / 1000 < duration) {
+                const iterStart = performance.now();
+                
+                // Allocate and fill large typed array
+                const buffer = new Float64Array(blockSize / 8);
+                
+                // Sequential write
+                for (let i = 0; i < buffer.length; i++) {
+                    buffer[i] = i * 1.001;
+                }
+                totalBytes += blockSize;
+                
+                // Sequential read with computation
+                let checksum = 0;
+                for (let i = 0; i < buffer.length; i++) {
+                    checksum += buffer[i];
+                }
+                totalBytes += blockSize;
+                
+                // Random access pattern
+                for (let i = 0; i < 100000; i++) {
+                    const idx = (Math.random() * buffer.length) | 0;
+                    buffer[idx] = buffer[idx] * 1.001;
+                }
+                totalBytes += 100000 * 8 * 2;
+                
+                // Copy operation
+                const buffer2 = new Float64Array(buffer);
+                totalBytes += blockSize;
+
+                const elapsed = (performance.now() - testStart) / 1000;
+                const progress = Math.min(elapsed / duration, 1);
+                const bandwidth = (totalBytes / 1024 / 1024) / elapsed;
+                
+                updateUI('ram', progress, null, 
+                    `Processed: ${formatNumber(totalBytes / 1024 / 1024)} MB | ${formatNumber(bandwidth)} MB/s`);
+                
+                if (performance.now() - iterStart > 100) {
+                    await new Promise(r => setTimeout(r, 0));
+                }
+            }
+
+            const finalElapsed = (performance.now() - testStart) / 1000;
+            const bandwidth = (totalBytes / 1024 / 1024) / finalElapsed;
+            
+            updateUI('ram', 1, bandwidth, `Final: ${formatNumber(bandwidth)} MB/s bandwidth`);
+            return bandwidth;
+        }
+
+        // Disk (IndexedDB) Benchmark
+        async function benchmarkDisk(duration) {
+            const dbName = 'benchmarkDB';
+            const storeName = 'benchmarkStore';
+            
+            // Open/create database
+            const db = await new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(storeName)) {
+                        db.createObjectStore(storeName, { keyPath: 'id' });
+                    }
+                };
+            });
+
+            const testStart = performance.now();
+            let totalBytes = 0;
+            const chunkSize = 1024 * 1024; // 1 MB chunks
+            let operationCount = 0;
+
+            while ((performance.now() - testStart) / 1000 < duration) {
+                // Generate data
+                const data = new Uint8Array(chunkSize);
+                for (let i = 0; i < data.length; i += 1024) {
+                    data[i] = Math.random() * 256;
+                }
+                
+                // Write operation
+                const writeStart = performance.now();
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    store.put({ id: operationCount % 100, data: data });
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                });
+                totalBytes += chunkSize;
+                
+                // Read operation
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction(storeName, 'readonly');
+                    const store = tx.objectStore(storeName);
+                    const request = store.get(operationCount % 100);
+                    request.onsuccess = resolve;
+                    request.onerror = () => reject(request.error);
+                });
+                totalBytes += chunkSize;
+                
+                operationCount++;
+                
+                const elapsed = (performance.now() - testStart) / 1000;
+                const progress = Math.min(elapsed / duration, 1);
+                const throughput = (totalBytes / 1024 / 1024) / elapsed;
+                
+                updateUI('disk', progress, null, 
+                    `Operations: ${formatNumber(operationCount)} | ${formatNumber(throughput)} MB/s`);
+                
+                await new Promise(r => setTimeout(r, 0));
+            }
+
+            // Cleanup
+            const tx = db.transaction(storeName, 'readwrite');
+            tx.objectStore(storeName).clear();
+            db.close();
+            indexedDB.deleteDatabase(dbName);
+
+            const finalElapsed = (performance.now() - testStart) / 1000;
+            const throughput = (totalBytes / 1024 / 1024) / finalElapsed;
+            
+            updateUI('disk', 1, throughput, `Final: ${formatNumber(throughput)} MB/s throughput`);
+            return throughput;
+        }
+
+        // Display Benchmark
+        async function benchmarkDisplay(duration) {
+            // Create a visible test canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = 1280;
+            canvas.height = 720;
+            canvas.style.cssText = 'position:fixed;top:10px;right:10px;width:120px;height:68px;border:2px solid #e94560;border-radius:6px;z-index:9999;';
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            const testStart = performance.now();
+            let frames = 0;
+            let particles = [];
+            
+            // Initialize particles
+            for (let i = 0; i < 500; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    size: 2 + Math.random() * 4,
+                    hue: Math.random() * 360
+                });
+            }
+
+            function renderFrame() {
+                // Clear with gradient
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#1a1a2e');
+                gradient.addColorStop(1, '#16213e');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw particles
+                const time = performance.now() / 1000;
+                
+                for (const p of particles) {
+                    // Update position
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    // Bounce off walls
+                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    
+                    // Draw particle with glow
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsla(${(p.hue + time * 50) % 360}, 100%, 60%, 0.8)`;
+                    ctx.fill();
+                    
+                    // Glow effect
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsla(${(p.hue + time * 50) % 360}, 100%, 60%, 0.2)`;
+                    ctx.fill();
+                }
+                
+                // Draw connecting lines
+                ctx.strokeStyle = 'rgba(0, 217, 255, 0.1)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < Math.min(i + 10, particles.length); j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                // Draw text
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px Consolas';
+                ctx.fillText(`Frame: ${frames}`, 10, 25);
+                
+                // Complex path drawing
+                ctx.beginPath();
+                ctx.strokeStyle = `hsl(${(time * 100) % 360}, 100%, 50%)`;
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 100; i++) {
+                    const angle = (i / 100) * Math.PI * 2 + time;
+                    const radius = 50 + Math.sin(angle * 5 + time) * 20;
+                    const x = canvas.width / 2 + Math.cos(angle) * radius;
+                    const y = canvas.height / 2 + Math.sin(angle) * radius;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+                
+                frames++;
+            }
+
+            while ((performance.now() - testStart) / 1000 < duration) {
+                const frameStart = performance.now();
+                renderFrame();
+                
+                const elapsed = (performance.now() - testStart) / 1000;
+                const progress = Math.min(elapsed / duration, 1);
+                const fps = frames / elapsed;
+                
+                updateUI('display', progress, null, 
+                    `Frames: ${formatNumber(frames)} | ${fps.toFixed(1)} FPS | Particles: 500`);
+                
+                // Target ~60fps but allow faster
+                const frameTime = performance.now() - frameStart;
+                if (frameTime < 16) {
+                    await new Promise(r => setTimeout(r, Math.max(0, 8 - frameTime)));
+                } else {
+                    await new Promise(r => setTimeout(r, 0));
+                }
+            }
+
+            document.body.removeChild(canvas);
+
+            const finalElapsed = (performance.now() - testStart) / 1000;
+            const fps = frames / finalElapsed;
+            
+            updateUI('display', 1, fps, `Final: ${fps.toFixed(1)} FPS render performance`);
+            return fps;
+        }
+
+        // Network Benchmark
+        async function benchmarkNetwork(duration) {
+            const testStart = performance.now();
+            let totalBytes = 0;
+            let requestCount = 0;
+            let speeds = [];
+            let successCount = 0;
+            
+            // Use Cloudflare's speed test endpoint and other reliable sources
+            const testUrls = [
+                { url: 'https://speed.cloudflare.com/__down?bytes=100000', size: 100000 },
+                { url: 'https://speed.cloudflare.com/__down?bytes=500000', size: 500000 },
+                { url: 'https://speed.cloudflare.com/__down?bytes=1000000', size: 1000000 }
+            ];
+            
+            updateUI('network', 0, null, 'Testing network speed...');
+            
+            while ((performance.now() - testStart) / 1000 < duration) {
+                const testInfo = testUrls[requestCount % testUrls.length];
+                
+                try {
+                    const fetchStart = performance.now();
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    
+                    const response = await fetch(testInfo.url, { 
+                        cache: 'no-store',
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const fetchEnd = performance.now();
+                        const fetchTime = (fetchEnd - fetchStart) / 1000;
+                        const bytes = blob.size || testInfo.size;
+                        
+                        if (fetchTime > 0.01) { // Ignore cached results
+                            totalBytes += bytes;
+                            const speedMbps = (bytes * 8 / 1000000) / fetchTime;
+                            speeds.push(speedMbps);
+                            successCount++;
+                        }
+                    }
+                } catch (e) {
+                    // Network error - try fallback measurement using data generation
+                    if (successCount === 0 && requestCount > 2) {
+                        // Fallback: measure ArrayBuffer creation/transfer speed as proxy
+                        const fallbackStart = performance.now();
+                        const size = 5 * 1024 * 1024; // 5MB
+                        const buffer = new ArrayBuffer(size);
+                        const view = new Uint8Array(buffer);
+                        for (let i = 0; i < view.length; i += 1024) {
+                            view[i] = i % 256;
+                        }
+                        const fallbackEnd = performance.now();
+                        const fallbackTime = (fallbackEnd - fallbackStart) / 1000;
+                        if (fallbackTime > 0) {
+                            // This is a rough proxy, not actual network speed
+                            const proxySpeed = (size * 8 / 1000000) / fallbackTime * 0.1; // Scale down
+                            speeds.push(proxySpeed);
+                        }
+                    }
+                }
+                
+                requestCount++;
+                
+                const elapsed = (performance.now() - testStart) / 1000;
+                const progress = Math.min(elapsed / duration, 1);
+                const avgSpeed = speeds.length > 0 
+                    ? speeds.reduce((a, b) => a + b, 0) / speeds.length 
+                    : 0;
+                
+                updateUI('network', progress, null, 
+                    `Requests: ${formatNumber(requestCount)} | Downloaded: ${formatNumber(totalBytes / 1024)} KB | ${avgSpeed.toFixed(1)} Mbps`);
+                
+                await new Promise(r => setTimeout(r, 100));
+            }
+            
+            // Calculate average speed
+            let avgSpeed = 0;
+            if (speeds.length > 0) {
+                speeds.sort((a, b) => a - b);
+                // Use median for stability
+                const medianSpeed = speeds[Math.floor(speeds.length / 2)];
+                avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+                
+                updateUI('network', 1, avgSpeed, 
+                    `Final: ${avgSpeed.toFixed(1)} Mbps avg | ${medianSpeed.toFixed(1)} Mbps median`);
+            } else {
+                updateUI('network', 1, 1, 'Network test unavailable (blocked by browser)');
+            }
+            
+            return avgSpeed || 1; // Return at least 1 to avoid 0 score
+        }
+
+        // System Information Detection
+        async function detectSystemInfo() {
+            // OS Detection
+            const ua = navigator.userAgent;
+            let os = 'Unknown';
+            if (ua.includes('Windows NT 10')) os = 'Windows 10/11';
+            else if (ua.includes('Windows NT 6.3')) os = 'Windows 8.1';
+            else if (ua.includes('Windows NT 6.2')) os = 'Windows 8';
+            else if (ua.includes('Windows NT 6.1')) os = 'Windows 7';
+            else if (ua.includes('Mac OS X')) {
+                const match = ua.match(/Mac OS X (\d+[._]\d+)/);
+                os = match ? `macOS ${match[1].replace('_', '.')}` : 'macOS';
+            }
+            else if (ua.includes('Linux')) os = 'Linux';
+            else if (ua.includes('Android')) os = 'Android';
+            else if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+            document.getElementById('info-os').textContent = os;
+            
+            // Browser Detection
+            let browser = 'Unknown';
+            if (ua.includes('Firefox/')) {
+                const match = ua.match(/Firefox\/(\d+)/);
+                browser = match ? `Firefox ${match[1]}` : 'Firefox';
+            } else if (ua.includes('Edg/')) {
+                const match = ua.match(/Edg\/(\d+)/);
+                browser = match ? `Edge ${match[1]}` : 'Edge';
+            } else if (ua.includes('Chrome/')) {
+                const match = ua.match(/Chrome\/(\d+)/);
+                browser = match ? `Chrome ${match[1]}` : 'Chrome';
+            } else if (ua.includes('Safari/') && !ua.includes('Chrome')) {
+                const match = ua.match(/Version\/(\d+)/);
+                browser = match ? `Safari ${match[1]}` : 'Safari';
+            }
+            document.getElementById('info-browser').textContent = browser;
+            
+            // CPU Cores
+            const cores = navigator.hardwareConcurrency || 'Unknown';
+            document.getElementById('info-cores').textContent = cores;
+            
+            // RAM (Chrome/Edge only, approximate)
+            if (navigator.deviceMemory) {
+                document.getElementById('info-ram').textContent = `~${navigator.deviceMemory} GB`;
+            } else {
+                document.getElementById('info-ram').textContent = 'N/A';
+            }
+            
+            // Storage Estimate
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    const quotaGB = (estimate.quota / (1024 * 1024 * 1024)).toFixed(0);
+                    const usedGB = (estimate.usage / (1024 * 1024 * 1024)).toFixed(1);
+                    document.getElementById('info-storage').textContent = `${usedGB}/${quotaGB} GB`;
+                } catch (e) {
+                    document.getElementById('info-storage').textContent = 'N/A';
+                }
+            } else {
+                document.getElementById('info-storage').textContent = 'N/A';
+            }
+            
+            // Screen Info
+            const screen = window.screen;
+            const dpr = window.devicePixelRatio || 1;
+            document.getElementById('info-screen').textContent = 
+                `${screen.width}×${screen.height} @${dpr}x`;
+            
+            // GPU Info (via WebGL)
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (gl) {
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (debugInfo) {
+                        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                        // Shorten the GPU name
+                        let gpuName = renderer
+                            .replace(/ANGLE \(|\)/g, '')
+                            .replace(/Direct3D11 vs_5_0 ps_5_0, /g, '')
+                            .replace(/,.*$/g, '')
+                            .trim();
+                        if (gpuName.length > 30) gpuName = gpuName.substring(0, 28) + '...';
+                        document.getElementById('info-gpu').textContent = gpuName;
+                    } else {
+                        document.getElementById('info-gpu').textContent = 'WebGL supported';
+                    }
+                } else {
+                    document.getElementById('info-gpu').textContent = 'No WebGL';
+                }
+            } catch (e) {
+                document.getElementById('info-gpu').textContent = 'N/A';
+            }
+            
+            // Connection Info
+            if (navigator.connection) {
+                const conn = navigator.connection;
+                let connInfo = conn.effectiveType ? conn.effectiveType.toUpperCase() : '';
+                if (conn.downlink) connInfo += ` ~${conn.downlink} Mbps`;
+                document.getElementById('info-connection').textContent = connInfo || 'Unknown';
+            } else {
+                document.getElementById('info-connection').textContent = 'N/A';
+            }
+        }
+
+        // Main benchmark runner
+        async function startBenchmark() {
+            if (isRunning) return;
+            isRunning = true;
+            
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = true;
+            startBtn.textContent = '⏳ Running...';
+            
+            // Reset UI
+            document.getElementById('finalScorePanel').classList.remove('visible');
+            results = {};
+            
+            for (const test of TESTS) {
+                document.getElementById(`progress-${test}`).style.width = '0%';
+                document.getElementById(`score-${test}`).textContent = 'Waiting...';
+                document.getElementById(`score-${test}`).className = 'test-score';
+                document.getElementById(`card-${test}`).className = 'test-card';
+            }
+            
+            totalDuration = parseFloat(document.getElementById('duration').value) || 10;
+            totalDuration = Math.max(5, Math.min(120, totalDuration));
+            const timePerTest = totalDuration / TESTS.length;
+            
+            startTime = performance.now();
+            
+            // Update overall progress
+            const progressInterval = setInterval(() => {
+                const elapsed = (performance.now() - startTime) / 1000;
+                updateOverallProgress(elapsed);
+                if (elapsed >= totalDuration) clearInterval(progressInterval);
+            }, 100);
+
+            // Run benchmarks sequentially
+            await benchmarkCPU(timePerTest);
+            await benchmarkGPU(timePerTest);
+            await benchmarkRAM(timePerTest);
+            await benchmarkDisk(timePerTest);
+            await benchmarkDisplay(timePerTest);
+            await benchmarkNetwork(timePerTest);
+
+            clearInterval(progressInterval);
+            updateOverallProgress(totalDuration);
+            
+            // Calculate final score
+            showFinalScore();
+            
+            startBtn.disabled = false;
+            startBtn.textContent = '▶ Start Benchmark';
+            isRunning = false;
+        }
+
+        function showFinalScore() {
+            let totalScore = 0;
+            const breakdown = document.getElementById('scoreBreakdown');
+            breakdown.innerHTML = '';
+            
+            // Only include these tests in the final score (exclude network)
+            const scoredTests = ['cpu', 'gpu', 'ram', 'disk', 'display'];
+            
+            for (const test of TESTS) {
+                const result = results[test];
+                const score = result ? result.normalized : 0;
+                
+                // Only add to total if it's a scored test
+                if (scoredTests.includes(test)) {
+                    totalScore += score;
+                }
+                
+                const item = document.createElement('div');
+                item.className = 'breakdown-item';
+                const label = test === 'network' ? `${test.toUpperCase()}*` : test.toUpperCase();
+                item.innerHTML = `
+                    <div class="breakdown-name">${label}</div>
+                    <div class="breakdown-score">${formatNumber(score)}</div>
+                `;
+                breakdown.appendChild(item);
+            }
+            
+            // Ensure score is between 10 and 1000
+            totalScore = Math.max(10, Math.min(1000, totalScore));
+            
+            document.getElementById('finalScoreValue').textContent = formatNumber(totalScore);
+            
+            // Determine rating
+            const ratingBadge = document.getElementById('ratingBadge');
+            let rating, ratingClass;
+            
+            if (totalScore >= 800) {
+                rating = '🏆 EXCELLENT';
+                ratingClass = 'excellent';
+            } else if (totalScore >= 600) {
+                rating = '⭐ GREAT';
+                ratingClass = 'great';
+            } else if (totalScore >= 400) {
+                rating = '👍 GOOD';
+                ratingClass = 'good';
+            } else if (totalScore >= 200) {
+                rating = '📊 AVERAGE';
+                ratingClass = 'average';
+            } else {
+                rating = '🔧 NEEDS UPGRADE';
+                ratingClass = 'low';
+            }
+            
+            ratingBadge.textContent = rating;
+            ratingBadge.className = `rating ${ratingClass}`;
+            
+            document.getElementById('finalScorePanel').classList.add('visible');
+        }
+
+        // Initialize
+        document.getElementById('duration').addEventListener('change', (e) => {
+            const val = parseFloat(e.target.value) || 10;
+            e.target.value = Math.max(5, Math.min(120, val));
+            document.getElementById('timeDisplay').textContent = `0.0s / ${e.target.value}.0s`;
+        });
+
+        // Detect system info on page load
+        detectSystemInfo();
+    </script>
+</body>
+</html>
