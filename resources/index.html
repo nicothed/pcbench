@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Benchmark Tool</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);min-height:100vh;color:#eaeaea;padding:10px;overflow-x:hidden}
+        .container{max-width:950px;margin:0 auto}
+        header{text-align:center;padding:10px 0}
+        h1{font-size:1.6rem;color:#e94560;text-shadow:0 0 20px rgba(233,69,96,0.5);margin-bottom:2px}
+        .subtitle{color:#888;font-size:0.8rem}
+        .native-badge{display:inline-block;background:linear-gradient(135deg,#00d9ff,#00ff88);color:#1a1a2e;font-size:0.6rem;padding:2px 8px;border-radius:10px;margin-left:8px;font-weight:bold;vertical-align:middle}
+        .settings-panel{background:rgba(15,52,96,0.5);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(233,69,96,0.3)}
+        .settings-row{display:flex;align-items:center;justify-content:center;gap:15px;flex-wrap:wrap}
+        .setting-group{display:flex;align-items:center;gap:8px}
+        .setting-group label{font-weight:600;color:#00d9ff;font-size:0.85rem}
+        .setting-group input[type="number"]{width:60px;padding:6px 10px;border:2px solid #e94560;border-radius:6px;background:rgba(0,0,0,0.3);color:#fff;font-size:0.9rem;text-align:center}
+        .setting-group input[type="number"]:focus{outline:none;box-shadow:0 0 15px rgba(233,69,96,0.5)}
+        .start-btn{background:linear-gradient(135deg,#e94560,#ff6b6b);color:white;border:none;padding:8px 25px;font-size:0.95rem;font-weight:bold;border-radius:25px;cursor:pointer;transition:all 0.3s ease;text-transform:uppercase;letter-spacing:1px}
+        .start-btn:hover:not(:disabled){transform:scale(1.05);box-shadow:0 10px 30px rgba(233,69,96,0.4)}
+        .start-btn:disabled{background:#555;cursor:not-allowed;transform:none}
+        .overall-progress{background:rgba(15,52,96,0.5);border-radius:10px;padding:10px 15px;margin-bottom:10px;border:1px solid rgba(0,217,255,0.3)}
+        .progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:0.85rem}
+        .time-display{font-size:1rem;font-weight:bold;color:#00d9ff}
+        .progress-bar-container{background:rgba(0,0,0,0.3);border-radius:8px;height:16px;overflow:hidden}
+        .progress-bar{height:100%;background:linear-gradient(90deg,#e94560,#ff6b6b,#00d9ff);background-size:200% 100%;animation:gradientMove 2s ease infinite;border-radius:8px;transition:width 0.1s ease;width:0%}
+        @keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .section-title{font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px 5px}
+        .tests-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+        .tests-grid.three-col{grid-template-columns:repeat(3,1fr)}
+        .test-card{background:rgba(15,52,96,0.6);border-radius:8px;padding:10px 12px;border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;cursor:pointer;position:relative}
+        .test-card:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.3)}
+        .test-card.active{border-color:#e94560;box-shadow:0 0 15px rgba(233,69,96,0.3)}
+        .test-card.complete{border-color:#00d9ff}
+        .test-card.native{border-color:rgba(0,255,136,0.3)}
+        .test-card.native.complete{border-color:#00ff88}
+        .test-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+        .test-name{display:flex;align-items:center;gap:6px;font-size:0.9rem;font-weight:bold}
+        .test-icon{font-size:1rem}
+        .test-score{font-family:'Consolas',monospace;font-size:0.85rem;color:#888}
+        .test-score.active{color:#e94560}
+        .test-score.complete{color:#00d9ff}
+        .test-card.native .test-score.complete{color:#00ff88}
+        .test-progress-bar{background:rgba(0,0,0,0.3);border-radius:4px;height:5px;overflow:hidden;margin-bottom:4px}
+        .test-progress-fill{height:100%;background:#e94560;border-radius:4px;transition:width 0.1s ease;width:0%}
+        .test-card.complete .test-progress-fill{background:#00d9ff}
+        .test-card.native.complete .test-progress-fill{background:#00ff88}
+        .test-details{font-family:'Consolas',monospace;font-size:0.7rem;color:#00d9ff;min-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .test-card.native .test-details{color:#00ff88}
+        .test-tooltip{display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.95);border:1px solid #00d9ff;border-radius:8px;padding:10px 12px;min-width:220px;z-index:100;font-size:0.75rem;margin-bottom:5px}
+        .test-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#00d9ff}
+        .test-card:hover .test-tooltip,.test-card.tooltip-active .test-tooltip{display:block}
+        .tooltip-row{display:flex;justify-content:space-between;margin:3px 0}
+        .tooltip-label{color:#888}
+        .tooltip-value{color:#00d9ff;font-weight:bold}
+        .extra-section{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,0.2)}
+        .extra-section .test-card{background:rgba(50,50,80,0.4);border-color:rgba(255,255,255,0.05)}
+        .extra-section .test-card.complete{border-color:#888}
+        .extra-section .test-card.complete .test-progress-fill{background:#888}
+        .extra-section .test-score.complete{color:#aaa}
+        .extra-label{font-size:0.65rem;color:#666;text-align:center;margin-top:4px}
+        .final-score-panel{background:linear-gradient(135deg,rgba(233,69,96,0.2),rgba(0,217,255,0.2));border-radius:12px;padding:15px;margin-top:10px;text-align:center;border:2px solid transparent;display:none}
+        .final-score-panel.visible{display:block;animation:fadeIn 0.5s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .final-score-label{font-size:0.9rem;color:#888;margin-bottom:2px}
+        .final-score-value{font-size:2.5rem;font-weight:bold;background:linear-gradient(135deg,#e94560,#00d9ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .final-score-max{font-size:0.8rem;color:#666}
+        .rating{font-size:1rem;margin-top:8px;padding:5px 15px;border-radius:15px;display:inline-block}
+        .rating.excellent{background:rgba(255,215,0,0.2);color:#ffd700}
+        .rating.great{background:rgba(0,255,0,0.2);color:#00ff00}
+        .rating.good{background:rgba(0,217,255,0.2);color:#00d9ff}
+        .rating.average{background:rgba(255,170,0,0.2);color:#ffaa00}
+        .rating.low{background:rgba(255,102,102,0.2);color:#ff6666}
+        .score-breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+        .breakdown-item{background:rgba(0,0,0,0.2);padding:8px 5px;border-radius:6px;cursor:pointer;transition:all 0.2s}
+        .breakdown-item:hover{background:rgba(0,0,0,0.4)}
+        .breakdown-item.excluded{opacity:0.5}
+        .breakdown-name{font-size:0.65rem;color:#888;margin-bottom:2px}
+        .breakdown-score{font-size:0.95rem;font-weight:bold;color:#00d9ff}
+        .breakdown-item.excluded .breakdown-score{color:#888}
+        .history-section{background:rgba(15,52,96,0.5);border-radius:10px;padding:12px;margin-top:10px;border:1px solid rgba(0,217,255,0.2);display:none}
+        .history-section.visible{display:block}
+        .history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .history-title{font-size:0.9rem;font-weight:bold;color:#00d9ff}
+        .clear-history-btn{background:transparent;border:1px solid #666;color:#888;padding:4px 10px;font-size:0.7rem;border-radius:12px;cursor:pointer;transition:all 0.2s}
+        .clear-history-btn:hover{border-color:#e94560;color:#e94560}
+        .history-chart{height:100px;display:flex;align-items:flex-end;gap:4px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.1)}
+        .history-bar-container{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:60px;cursor:pointer;position:relative}
+        .history-bar{width:100%;background:linear-gradient(to top,#e94560,#00d9ff);border-radius:4px 4px 0 0;transition:all 0.3s;min-height:5px}
+        .history-bar-container:hover .history-bar{box-shadow:0 0 10px rgba(0,217,255,0.5)}
+        .history-date{font-size:0.55rem;color:#666;text-align:center;white-space:nowrap}
+        .history-score-label{font-size:0.65rem;color:#00d9ff;font-weight:bold}
+        .history-tooltip{display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.95);border:1px solid #00d9ff;border-radius:6px;padding:8px;min-width:140px;z-index:100;font-size:0.7rem;margin-bottom:5px}
+        .history-bar-container:hover .history-tooltip{display:block}
+        .system-info-panel{background:rgba(15,52,96,0.5);border-radius:10px;padding:10px 15px;margin-bottom:10px;border:1px solid rgba(0,217,255,0.3)}
+        .system-info-title{font-size:0.85rem;font-weight:bold;color:#00d9ff;margin-bottom:8px;text-align:center}
+        .system-info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+        .info-item{background:rgba(0,0,0,0.2);padding:6px 8px;border-radius:6px;text-align:center}
+        .info-item.native{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2)}
+        .info-label{display:block;font-size:0.6rem;color:#888;margin-bottom:2px;text-transform:uppercase}
+        .info-value{display:block;font-size:0.75rem;color:#eaeaea;font-weight:600;word-break:break-word}
+        .info-item.native .info-value{color:#00ff88}
+        .drives-panel{background:rgba(15,52,96,0.5);border-radius:10px;padding:10px 15px;margin-bottom:10px;border:1px solid rgba(0,255,136,0.3)}
+        .drives-title{font-size:0.85rem;font-weight:bold;color:#00ff88;margin-bottom:8px;text-align:center}
+        .drives-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+        .drive-item{background:rgba(0,0,0,0.2);padding:8px;border-radius:6px;border:1px solid rgba(0,255,136,0.2)}
+        .drive-letter{font-size:0.9rem;font-weight:bold;color:#00ff88;margin-bottom:4px}
+        .drive-bar{background:rgba(0,0,0,0.3);border-radius:4px;height:8px;overflow:hidden;margin:4px 0}
+        .drive-bar-fill{height:100%;background:linear-gradient(90deg,#00ff88,#00d9ff);border-radius:4px;transition:width 0.3s}
+        .drive-bar-fill.warning{background:linear-gradient(90deg,#ffaa00,#ff6b6b)}
+        .drive-bar-fill.critical{background:linear-gradient(90deg,#ff6b6b,#e94560)}
+        .drive-info{font-size:0.65rem;color:#888}
+        #gpuCanvas{position:absolute;left:-9999px;width:800px;height:600px}
+        .status-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.8);padding:5px 15px;font-size:0.7rem;color:#666;display:flex;justify-content:space-between}
+        .status-bar .native-status{color:#00ff88}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ PC Benchmark Tool ⚡<span class="native-badge">NATIVE</span></h1>
+            <p class="subtitle">Enhanced Windows Performance Analysis with Native APIs</p>
+        </header>
+
+        <div class="system-info-panel" id="systemInfoPanel">
+            <div class="system-info-title">📋 System Information</div>
+            <div class="system-info-grid" id="systemInfoGrid">
+                <div class="info-item native"><span class="info-label">OS</span><span class="info-value" id="info-os">Detecting...</span></div>
+                <div class="info-item native"><span class="info-label">CPU</span><span class="info-value" id="info-cpu">Detecting...</span></div>
+                <div class="info-item native"><span class="info-label">CPU Cores</span><span class="info-value" id="info-cores">Detecting...</span></div>
+                <div class="info-item native"><span class="info-label">RAM</span><span class="info-value" id="info-ram">Detecting...</span></div>
+                <div class="info-item native"><span class="info-label">GPU</span><span class="info-value" id="info-gpu">Detecting...</span></div>
+                <div class="info-item native"><span class="info-label">Uptime</span><span class="info-value" id="info-uptime">Detecting...</span></div>
+                <div class="info-item native"><span class="info-label">Processes</span><span class="info-value" id="info-processes">Detecting...</span></div>
+                <div class="info-item"><span class="info-label">Screen</span><span class="info-value" id="info-screen">Detecting...</span></div>
+            </div>
+        </div>
+
+        <div class="drives-panel" id="drivesPanel">
+            <div class="drives-title">💾 Storage Drives</div>
+            <div class="drives-grid" id="drivesGrid">
+                <div class="drive-item"><span class="drive-letter">Detecting drives...</span></div>
+            </div>
+        </div>
+
+        <div class="settings-panel">
+            <div class="settings-row">
+                <div class="setting-group">
+                    <label for="duration">Test Duration:</label>
+                    <input type="number" id="duration" value="10" min="5" max="120">
+                    <span>seconds</span>
+                </div>
+                <button class="start-btn" id="startBtn" onclick="startBenchmark()">▶ Start Benchmark</button>
+            </div>
+        </div>
+
+        <div class="overall-progress">
+            <div class="progress-header">
+                <span>Overall Progress</span>
+                <span class="time-display" id="timeDisplay">0.0s / 10.0s</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="overallProgress"></div>
+            </div>
+        </div>
+
+        <div class="section-title">Hardware Performance (Browser-Based)</div>
+        <div class="tests-grid" id="mainTests">
+            <div class="test-card" id="card-cpu" onclick="toggleTooltip(this)">
+                <div class="test-header"><span class="test-name"><span class="test-icon">🖥️</span> CPU</span><span class="test-score" id="score-cpu">Waiting...</span></div>
+                <div class="test-progress-bar"><div class="test-progress-fill" id="progress-cpu"></div></div>
+                <div class="test-details" id="details-cpu">Mathematical computations</div>
+                <div class="test-tooltip" id="tooltip-cpu"><div class="tooltip-row"><span class="tooltip-label">Ops/sec:</span><span class="tooltip-value" id="tip-cpu-rate">-</span></div><div class="tooltip-row"><span class="tooltip-label">Total Ops:</span><span class="tooltip-value" id="tip-cpu-ops">-</span></div></div>
+            </div>
+            <div class="test-card" id="card-gpu" onclick="toggleTooltip(this)">
+                <div class="test-header"><span class="test-name"><span class="test-icon">🎮</span> GPU</span><span class="test-score" id="score-gpu">Waiting...</span></div>
+                <div class="test-progress-bar"><div class="test-progress-fill" id="progress-gpu"></div></div>
+                <div class="test-details" id="details-gpu">WebGL rendering</div>
+                <div class="test-tooltip" id="tooltip-gpu"><div class="tooltip-row"><span class="tooltip-label">Triangles:</span><span class="tooltip-value" id="tip-gpu-tris">-</span></div><div class="tooltip-row"><span class="tooltip-label">FPS:</span><span class="tooltip-value" id="tip-gpu-fps">-</span></div></div>
+            </div>
+            <div class="test-card" id="card-ram" onclick="toggleTooltip(this)">
+                <div class="test-header"><span class="test-name"><span class="test-icon">🧠</span> RAM</span><span class="test-score" id="score-ram">Waiting...</span></div>
+                <div class="test-progress-bar"><div class="test-progress-fill" id="progress-ram"></div></div>
+                <div class="test-details" id="details-ram">Memory bandwidth</div>
+                <div class="test-tooltip" id="tooltip-ram"><div class="tooltip-row"><span class="tooltip-label">Bandwidth:</span><span class="tooltip-value" id="tip-ram-bw">-</span></div><div class="tooltip-row"><span class="tooltip-label">Processed:</span><span class="tooltip-value" id="tip-ram-proc">-</span></div></div>
+            </div>
+            <div class="test-card" id="card-display" onclick="toggleTooltip(this)">
+                <div class="test-header"><span class="test-name"><span class="test-icon">🖼️</span> Display</span><span class="test-score" id="score-display">Waiting...</span></div>
+                <div class="test-progress-bar"><div class="test-progress-fill" id="progress-display"></div></div>
+                <div class="test-details" id="details-display">Canvas rendering</div>
+                <div class="test-tooltip" id="tooltip-display"><div class="tooltip-row"><span class="tooltip-label">FPS:</span><span class="tooltip-value" id="tip-display-fps">-</span></div><div class="tooltip-row"><span class="tooltip-label">Frames:</span><span class="tooltip-value" id="tip-display-frames">-</span></div></div>
+            </div>
+        </div>
+
+        <div class="section-title">Native Tests (Windows APIs) <span class="native-badge">NATIVE</span></div>
+        <div class="tests-grid three-col" id="nativeTests">
+            <div class="test-card native" id="card-disknat" onclick="toggleTooltip(this)">
+                <div class="test-header"><span class="test-name"><span class="test-icon">💿</span> Disk I/O</span><span class="test-score" id="score-disknat">Waiting...</span></div>
+                <div class="test-progress-bar"><div class="test-progress-fill" id="progress-disknat"></div></div>
+                <div class="test-details" id="details-disknat">Native file read/write</div>
+                <div class="test-tooltip" id="tooltip-disknat"><div class="tooltip-row"><span class="tooltip-label">Write Speed:</span><span class="tooltip-value" id="tip-disk-write">-</span></div><div class="tooltip-row"><span class="tooltip-label">Read Speed:</span><span class="tooltip-value" id="tip-disk-read">-</span></div><div class="tooltip-row"><span class="tooltip-label">Total:</span><span class="tooltip-value" id="tip-disk-total">-</span></div></div>
+            </div>
+            <div class="test-card native" id="card-health" onclick="toggleTooltip(this)">
+                <div class="test-header"><span class="test-name"><span class="test-icon">🩺</span> Health</span><span class="test-score" id="score-health">Waiting...</span></div>
+                <div class="test-progress-bar"><div class="test-progress-fill" id="progress-health"></div></div>
+                <div class="test-details" id="details-health">System responsiveness</div>
+                <div class="test-tooltip" id="tooltip-health"><div class="tooltip-row"><span class="tooltip-label">Timer Jitter:</span><span class="tooltip-value" id="tip-health-timer">-</span></div><div class="tooltip-row"><span class="tooltip-label">Frame Jitter:</span><span class="tooltip-value" id="tip-health-frame">-</span></div><div class="tooltip-row"><span class="tooltip-label">Task Latency:</span><span class="tooltip-value" id="tip-health-task">-</span></div><div class="tooltip-row"><span class="tooltip-label">Process Count:</span><span class="tooltip-value" id="tip-health-procs">-</span></div></div>
+            </div>
+            <div class="test-card native" id="card-memnat" onclick="toggleTooltip(this)">
+                <div class="test-header"><span class="test-name"><span class="test-icon">📊</span> Memory</span><span class="test-score" id="score-memnat">Waiting...</span></div>
+                <div class="test-progress-bar"><div class="test-progress-fill" id="progress-memnat"></div></div>
+                <div class="test-details" id="details-memnat">Available memory check</div>
+                <div class="test-tooltip" id="tooltip-memnat"><div class="tooltip-row"><span class="tooltip-label">Total RAM:</span><span class="tooltip-value" id="tip-mem-total">-</span></div><div class="tooltip-row"><span class="tooltip-label">Available:</span><span class="tooltip-value" id="tip-mem-avail">-</span></div><div class="tooltip-row"><span class="tooltip-label">Usage:</span><span class="tooltip-value" id="tip-mem-usage">-</span></div></div>
+            </div>
+        </div>
+
+        <div class="extra-section">
+            <div class="section-title">Additional Tests (Not Scored)</div>
+            <div class="tests-grid">
+                <div class="test-card" id="card-network" onclick="toggleTooltip(this)">
+                    <div class="test-header"><span class="test-name"><span class="test-icon">🌐</span> Network</span><span class="test-score" id="score-network">Waiting...</span></div>
+                    <div class="test-progress-bar"><div class="test-progress-fill" id="progress-network"></div></div>
+                    <div class="test-details" id="details-network">Download speed</div>
+                    <div class="test-tooltip" id="tooltip-network"><div class="tooltip-row"><span class="tooltip-label">Avg Speed:</span><span class="tooltip-value" id="tip-net-avg">-</span></div><div class="tooltip-row"><span class="tooltip-label">Median:</span><span class="tooltip-value" id="tip-net-med">-</span></div><div class="tooltip-row"><span class="tooltip-label">Downloaded:</span><span class="tooltip-value" id="tip-net-dl">-</span></div></div>
+                </div>
+            </div>
+            <div class="extra-label">Network speed varies and doesn't reflect PC performance</div>
+        </div>
+
+        <div class="final-score-panel" id="finalScorePanel">
+            <div class="final-score-label">FINAL SCORE</div>
+            <div class="final-score-value" id="finalScoreValue">0</div>
+            <div class="final-score-max">out of 1,000</div>
+            <div class="rating" id="ratingBadge">Loading...</div>
+            <div class="score-breakdown" id="scoreBreakdown"></div>
+        </div>
+
+        <div class="history-section" id="historySection">
+            <div class="history-header">
+                <span class="history-title">📊 Test History</span>
+                <button class="clear-history-btn" onclick="clearHistory()">Clear History</button>
+            </div>
+            <div class="history-chart" id="historyChart"></div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="statusText">Ready</span>
+        <span class="native-status" id="nativeStatus">Neutralino: Initializing...</span>
+    </div>
+
+    <canvas id="gpuCanvas"></canvas>
+    <script src="js/neutralino.js"></script>
+    <script>
+        // Neutralino initialization
+        let isNeutralino = false;
+        let nativeInfo = {};
+
+        async function initNeutralino() {
+            try {
+                Neutralino.init();
+                Neutralino.events.on("windowClose", () => Neutralino.app.exit());
+                isNeutralino = true;
+                document.getElementById('nativeStatus').textContent = 'Neutralino: Connected ✓';
+                await detectNativeSystemInfo();
+                await detectDrives();
+            } catch (e) {
+                document.getElementById('nativeStatus').textContent = 'Neutralino: Browser Mode';
+                console.log('Running in browser mode:', e);
+                detectBrowserSystemInfo();
+            }
+        }
+
+        function formatNumber(num) { return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+        function formatBytes(bytes) { 
+            if (bytes >= 1099511627776) return (bytes / 1099511627776).toFixed(1) + ' TB';
+            if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB';
+            if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+            return (bytes / 1024).toFixed(1) + ' KB';
+        }
+
+        let isRunning = false, totalDuration = 10, startTime = 0, results = {}, rawResults = {};
+        const TESTS = ['cpu', 'gpu', 'ram', 'display', 'disknat', 'health', 'memnat', 'network'];
+        const SCORED_TESTS = ['cpu', 'gpu', 'ram', 'display', 'disknat', 'health', 'memnat'];
+        const SCORE_CALIBRATION = {
+            cpu: { min: 100000, max: 176000000 },
+            gpu: { min: 100, max: 3250 },
+            ram: { min: 500, max: 5200 },
+            display: { min: 30, max: 150 },
+            disknat: { min: 10, max: 800 },
+            health: { min: 0, max: 250 },
+            memnat: { min: 0, max: 143 },
+            network: { min: 1, max: 55 }
+        };
+
+        function normalizeScore(t, r) {
+            const c = SCORE_CALIBRATION[t], n = (r - c.min) / (c.max - c.min);
+            return Math.round(Math.max(0, Math.min(1, n)) * 143); // 7 tests * 143 ≈ 1000
+        }
+
+        function updateUI(t, p, r, d) {
+            const pb = document.getElementById(`progress-${t}`), se = document.getElementById(`score-${t}`), de = document.getElementById(`details-${t}`), ca = document.getElementById(`card-${t}`);
+            if (pb) pb.style.width = `${p * 100}%`;
+            if (d && de) de.textContent = d;
+            if (p > 0 && p < 1) { ca.classList.add('active'); ca.classList.remove('complete'); se.classList.add('active'); se.classList.remove('complete'); se.textContent = 'Testing...'; }
+            else if (p >= 1 && r !== null) { ca.classList.remove('active'); ca.classList.add('complete'); se.classList.remove('active'); se.classList.add('complete'); const n = normalizeScore(t, r); se.textContent = `${formatNumber(n)} pts`; results[t] = { raw: r, normalized: n }; }
+        }
+
+        function updateOverallProgress(e) {
+            const p = Math.min(e / totalDuration, 1);
+            document.getElementById('overallProgress').style.width = `${p * 100}%`;
+            document.getElementById('timeDisplay').textContent = `${e.toFixed(1)}s / ${totalDuration.toFixed(1)}s`;
+        }
+
+        function toggleTooltip(c) { c.classList.toggle('tooltip-active'); document.querySelectorAll('.test-card').forEach(x => { if (x !== c) x.classList.remove('tooltip-active'); }); }
+
+        // Native System Info Detection
+        async function detectNativeSystemInfo() {
+            try {
+                // OS Info
+                const osInfo = await Neutralino.os.execCommand('wmic os get Caption /value');
+                const osMatch = osInfo.stdOut.match(/Caption=(.+)/);
+                document.getElementById('info-os').textContent = osMatch ? osMatch[1].trim() : 'Windows';
+
+                // CPU Info
+                const cpuInfo = await Neutralino.os.execCommand('wmic cpu get Name /value');
+                const cpuMatch = cpuInfo.stdOut.match(/Name=(.+)/);
+                let cpuName = cpuMatch ? cpuMatch[1].trim() : 'Unknown';
+                if (cpuName.length > 25) cpuName = cpuName.replace(/\(R\)|\(TM\)|CPU|@.*/gi, '').trim();
+                document.getElementById('info-cpu').textContent = cpuName.length > 28 ? cpuName.slice(0, 26) + '...' : cpuName;
+
+                // CPU Cores
+                const coresInfo = await Neutralino.os.execCommand('wmic cpu get NumberOfCores,NumberOfLogicalProcessors /value');
+                const coresMatch = coresInfo.stdOut.match(/NumberOfCores=(\d+)/);
+                const threadsMatch = coresInfo.stdOut.match(/NumberOfLogicalProcessors=(\d+)/);
+                document.getElementById('info-cores').textContent = coresMatch && threadsMatch ? `${coresMatch[1]}C / ${threadsMatch[1]}T` : 'N/A';
+
+                // RAM
+                const memInfo = await Neutralino.computer.getMemoryInfo();
+                nativeInfo.totalRam = memInfo.physical.total;
+                nativeInfo.availRam = memInfo.physical.available;
+                document.getElementById('info-ram').textContent = formatBytes(memInfo.physical.total);
+
+                // GPU
+                const gpuInfo = await Neutralino.os.execCommand('wmic path win32_VideoController get Name /value');
+                const gpuMatch = gpuInfo.stdOut.match(/Name=(.+)/);
+                let gpuName = gpuMatch ? gpuMatch[1].trim() : 'Unknown';
+                document.getElementById('info-gpu').textContent = gpuName.length > 25 ? gpuName.slice(0, 23) + '...' : gpuName;
+
+                // Uptime
+                const uptimeInfo = await Neutralino.os.execCommand('wmic os get LastBootUpTime /value');
+                const uptimeMatch = uptimeInfo.stdOut.match(/LastBootUpTime=(\d{14})/);
+                if (uptimeMatch) {
+                    const bootTime = uptimeMatch[1];
+                    const bootDate = new Date(
+                        parseInt(bootTime.slice(0, 4)), parseInt(bootTime.slice(4, 6)) - 1, parseInt(bootTime.slice(6, 8)),
+                        parseInt(bootTime.slice(8, 10)), parseInt(bootTime.slice(10, 12)), parseInt(bootTime.slice(12, 14))
+                    );
+                    const uptime = Date.now() - bootDate.getTime();
+                    const hours = Math.floor(uptime / 3600000);
+                    const mins = Math.floor((uptime % 3600000) / 60000);
+                    document.getElementById('info-uptime').textContent = hours > 24 ? `${Math.floor(hours/24)}d ${hours%24}h` : `${hours}h ${mins}m`;
+                }
+
+                // Process Count
+                const procInfo = await Neutralino.os.execCommand('wmic process get ProcessId /value | find /c "="');
+                document.getElementById('info-processes').textContent = procInfo.stdOut.trim() || 'N/A';
+                nativeInfo.processCount = parseInt(procInfo.stdOut.trim()) || 0;
+
+            } catch (e) {
+                console.error('Native info error:', e);
+            }
+            document.getElementById('info-screen').textContent = `${screen.width}×${screen.height} @${devicePixelRatio || 1}x`;
+        }
+
+        async function detectDrives() {
+            if (!isNeutralino) return;
+            try {
+                const drivesInfo = await Neutralino.os.execCommand('wmic logicaldisk get DeviceID,Size,FreeSpace,DriveType /format:csv');
+                const lines = drivesInfo.stdOut.trim().split('\n').filter(l => l.includes(','));
+                const drivesGrid = document.getElementById('drivesGrid');
+                drivesGrid.innerHTML = '';
+
+                for (let i = 1; i < lines.length; i++) {
+                    const parts = lines[i].split(',');
+                    if (parts.length >= 4) {
+                        const letter = parts[1];
+                        const driveType = parseInt(parts[2]);
+                        const freeSpace = parseInt(parts[3]) || 0;
+                        const totalSize = parseInt(parts[4]) || 0;
+
+                        if (totalSize > 0 && (driveType === 3 || driveType === 2)) { // Fixed or removable
+                            const usedSpace = totalSize - freeSpace;
+                            const usedPercent = (usedSpace / totalSize) * 100;
+                            let barClass = 'drive-bar-fill';
+                            if (usedPercent > 90) barClass += ' critical';
+                            else if (usedPercent > 75) barClass += ' warning';
+
+                            const driveEl = document.createElement('div');
+                            driveEl.className = 'drive-item';
+                            driveEl.innerHTML = `
+                                <div class="drive-letter">${letter}</div>
+                                <div class="drive-bar"><div class="${barClass}" style="width:${usedPercent}%"></div></div>
+                                <div class="drive-info">${formatBytes(freeSpace)} free of ${formatBytes(totalSize)}</div>
+                            `;
+                            drivesGrid.appendChild(driveEl);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Drive detection error:', e);
+            }
+        }
+
+        function detectBrowserSystemInfo() {
+            const ua = navigator.userAgent;
+            document.getElementById('info-os').textContent = ua.includes('Windows') ? 'Windows' : ua.includes('Mac') ? 'macOS' : 'Unknown';
+            document.getElementById('info-cpu').textContent = 'N/A (Browser)';
+            document.getElementById('info-cores').textContent = navigator.hardwareConcurrency || 'N/A';
+            document.getElementById('info-ram').textContent = navigator.deviceMemory ? `~${navigator.deviceMemory} GB` : 'N/A';
+            document.getElementById('info-gpu').textContent = 'N/A (Browser)';
+            document.getElementById('info-uptime').textContent = 'N/A';
+            document.getElementById('info-processes').textContent = 'N/A';
+            document.getElementById('info-screen').textContent = `${screen.width}×${screen.height}`;
+            document.getElementById('drivesGrid').innerHTML = '<div class="drive-item"><span class="drive-letter">Native mode required</span></div>';
+        }
+
+        // Benchmarks
+        async function benchmarkCPU(duration) {
+            document.getElementById('statusText').textContent = 'Running CPU benchmark...';
+            const ts = performance.now(); let ops = 0;
+            while ((performance.now() - ts) / 1000 < duration) {
+                const ss = 10000, sv = new Uint8Array(ss); for (let i = 2; i < ss; i++) if (!sv[i]) for (let j = i * 2; j < ss; j += i) sv[j] = 1; ops += ss;
+                const sz = 64, mA = new Float64Array(sz * sz), mB = new Float64Array(sz * sz), mC = new Float64Array(sz * sz);
+                for (let i = 0; i < sz * sz; i++) { mA[i] = Math.random(); mB[i] = Math.random(); }
+                for (let i = 0; i < sz; i++) for (let j = 0; j < sz; j++) { let s = 0; for (let k = 0; k < sz; k++) s += mA[i * sz + k] * mB[k * sz + j]; mC[i * sz + j] = s; }
+                ops += sz * sz * sz * 2;
+                for (let i = 0; i < 5000; i++) { Math.sin(i) * Math.cos(i) * Math.tan(i % 89 + 1); ops += 6; }
+                const el = (performance.now() - ts) / 1000;
+                updateUI('cpu', Math.min(el / duration, 1), null, `Ops: ${formatNumber(ops)} | ${formatNumber(ops / el)}/s`);
+                await new Promise(r => setTimeout(r, 0));
+            }
+            const fe = (performance.now() - ts) / 1000, ops_s = ops / fe;
+            rawResults.cpu = { operations: ops, opsPerSec: ops_s };
+            document.getElementById('tip-cpu-rate').textContent = formatNumber(ops_s);
+            document.getElementById('tip-cpu-ops').textContent = formatNumber(ops);
+            updateUI('cpu', 1, ops_s, `Final: ${formatNumber(ops_s)} ops/sec`);
+            return ops_s;
+        }
+
+        async function benchmarkGPU(duration) {
+            document.getElementById('statusText').textContent = 'Running GPU benchmark...';
+            const canvas = document.getElementById('gpuCanvas'), gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (!gl) { updateUI('gpu', 1, 100, 'WebGL not supported'); return 100; }
+            const vs = gl.createShader(gl.VERTEX_SHADER); gl.shaderSource(vs, 'attribute vec4 p;attribute vec4 c;varying vec4 v;uniform mat4 m;void main(){gl_Position=m*p;v=c;}'); gl.compileShader(vs);
+            const fs = gl.createShader(gl.FRAGMENT_SHADER); gl.shaderSource(fs, 'precision mediump float;varying vec4 v;void main(){gl_FragColor=v;}'); gl.compileShader(fs);
+            const prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog); gl.useProgram(prog);
+            const tc = 10000, vts = new Float32Array(tc * 9), cls = new Float32Array(tc * 12);
+            for (let i = 0; i < tc; i++) { const cx = Math.random() * 2 - 1, cy = Math.random() * 2 - 1, sz = 0.02 + Math.random() * 0.03; vts[i * 9] = cx; vts[i * 9 + 1] = cy + sz; vts[i * 9 + 2] = 0; vts[i * 9 + 3] = cx - sz; vts[i * 9 + 4] = cy - sz; vts[i * 9 + 5] = 0; vts[i * 9 + 6] = cx + sz; vts[i * 9 + 7] = cy - sz; vts[i * 9 + 8] = 0; const r = Math.random(), g = Math.random(), b = Math.random(); for (let j = 0; j < 3; j++) { cls[i * 12 + j * 4] = r; cls[i * 12 + j * 4 + 1] = g; cls[i * 12 + j * 4 + 2] = b; cls[i * 12 + j * 4 + 3] = 1; } }
+            const pb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, pb); gl.bufferData(gl.ARRAY_BUFFER, vts, gl.STATIC_DRAW);
+            const pl = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(pl); gl.vertexAttribPointer(pl, 3, gl.FLOAT, false, 0, 0);
+            const cb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, cb); gl.bufferData(gl.ARRAY_BUFFER, cls, gl.STATIC_DRAW);
+            const cl = gl.getAttribLocation(prog, 'c'); gl.enableVertexAttribArray(cl); gl.vertexAttribPointer(cl, 4, gl.FLOAT, false, 0, 0);
+            const ml = gl.getUniformLocation(prog, 'm');
+            const ts = performance.now(); let frames = 0;
+            while ((performance.now() - ts) / 1000 < duration) {
+                const t = performance.now() / 1000, a = t * 0.5, c = Math.cos(a), s = Math.sin(a);
+                gl.uniformMatrix4fv(ml, false, new Float32Array([c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
+                gl.clearColor(0.1, 0.1, 0.15, 1); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, tc * 3); gl.finish();
+                frames++; const el = (performance.now() - ts) / 1000;
+                updateUI('gpu', Math.min(el / duration, 1), null, `Tris: ${formatNumber(tc)} | ${(frames / el).toFixed(1)} FPS`);
+                await new Promise(r => setTimeout(r, 0));
+            }
+            const fps = frames / ((performance.now() - ts) / 1000), score = tc * fps / 1000;
+            rawResults.gpu = { triangles: tc, fps, frames };
+            document.getElementById('tip-gpu-tris').textContent = formatNumber(tc);
+            document.getElementById('tip-gpu-fps').textContent = fps.toFixed(1);
+            updateUI('gpu', 1, score, `Final: ${fps.toFixed(1)} FPS @ ${formatNumber(tc)} tris`);
+            gl.deleteBuffer(pb); gl.deleteBuffer(cb); gl.deleteProgram(prog); gl.deleteShader(vs); gl.deleteShader(fs);
+            return score;
+        }
+
+        async function benchmarkRAM(duration) {
+            document.getElementById('statusText').textContent = 'Running RAM benchmark...';
+            const ts = performance.now(); let tb = 0; const bs = 16 * 1024 * 1024;
+            while ((performance.now() - ts) / 1000 < duration) {
+                const buf = new Float64Array(bs / 8); for (let i = 0; i < buf.length; i++) buf[i] = i * 1.001; tb += bs;
+                let cs = 0; for (let i = 0; i < buf.length; i++) cs += buf[i]; tb += bs;
+                for (let i = 0; i < 100000; i++) { const idx = (Math.random() * buf.length) | 0; buf[idx] *= 1.001; } tb += 100000 * 8 * 2;
+                new Float64Array(buf); tb += bs;
+                const el = (performance.now() - ts) / 1000;
+                updateUI('ram', Math.min(el / duration, 1), null, `${formatNumber(tb / 1024 / 1024)} MB | ${formatNumber(tb / 1024 / 1024 / el)} MB/s`);
+                await new Promise(r => setTimeout(r, 0));
+            }
+            const bw = (tb / 1024 / 1024) / ((performance.now() - ts) / 1000);
+            rawResults.ram = { totalBytes: tb, bandwidth: bw };
+            document.getElementById('tip-ram-bw').textContent = `${formatNumber(bw)} MB/s`;
+            document.getElementById('tip-ram-proc').textContent = `${formatNumber(tb / 1024 / 1024)} MB`;
+            updateUI('ram', 1, bw, `Final: ${formatNumber(bw)} MB/s`);
+            return bw;
+        }
+
+        async function benchmarkDisplay(duration) {
+            document.getElementById('statusText').textContent = 'Running Display benchmark...';
+            const canvas = document.createElement('canvas'); canvas.width = 1280; canvas.height = 720;
+            canvas.style.cssText = 'position:fixed;top:10px;right:10px;width:120px;height:68px;border:2px solid #e94560;border-radius:6px;z-index:9999;';
+            document.body.appendChild(canvas); const ctx = canvas.getContext('2d');
+            const ts = performance.now(); let frames = 0;
+            const particles = Array.from({ length: 500 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, size: 2 + Math.random() * 4, hue: Math.random() * 360 }));
+            while ((performance.now() - ts) / 1000 < duration) {
+                const t = performance.now() / 1000;
+                const g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); g.addColorStop(0, '#1a1a2e'); g.addColorStop(1, '#16213e');
+                ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for (const p of particles) { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > canvas.width) p.vx *= -1; if (p.y < 0 || p.y > canvas.height) p.vy *= -1; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fillStyle = `hsla(${(p.hue + t * 50) % 360},100%,60%,0.8)`; ctx.fill(); }
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Consolas'; ctx.fillText(`Frame: ${frames}`, 10, 25);
+                frames++; const el = (performance.now() - ts) / 1000;
+                updateUI('display', Math.min(el / duration, 1), null, `Frames: ${formatNumber(frames)} | ${(frames / el).toFixed(1)} FPS`);
+                await new Promise(r => setTimeout(r, 8));
+            }
+            document.body.removeChild(canvas);
+            const fps = frames / ((performance.now() - ts) / 1000);
+            rawResults.display = { frames, fps };
+            document.getElementById('tip-display-fps').textContent = fps.toFixed(1);
+            document.getElementById('tip-display-frames').textContent = formatNumber(frames);
+            updateUI('display', 1, fps, `Final: ${fps.toFixed(1)} FPS`);
+            return fps;
+        }
+
+        // Native Disk I/O Benchmark
+        async function benchmarkDiskNative(duration) {
+            document.getElementById('statusText').textContent = 'Running Disk I/O benchmark...';
+            if (!isNeutralino) {
+                updateUI('disknat', 1, 100, 'Native mode required');
+                return 100;
+            }
+
+            const ts = performance.now();
+            let totalWritten = 0, totalRead = 0;
+            const chunkSize = 1024 * 1024; // 1MB chunks
+            const testFile = NL_PATH + '/benchmark_test.tmp';
+            let writeSpeed = 0, readSpeed = 0;
+
+            try {
+                while ((performance.now() - ts) / 1000 < duration) {
+                    // Generate random data
+                    const data = Array.from({ length: chunkSize }, () => String.fromCharCode(Math.floor(Math.random() * 26) + 65)).join('');
+                    
+                    // Write test
+                    const writeStart = performance.now();
+                    await Neutralino.filesystem.writeFile(testFile, data);
+                    const writeTime = (performance.now() - writeStart) / 1000;
+                    totalWritten += chunkSize;
+                    
+                    // Read test
+                    const readStart = performance.now();
+                    await Neutralino.filesystem.readFile(testFile);
+                    const readTime = (performance.now() - readStart) / 1000;
+                    totalRead += chunkSize;
+
+                    const el = (performance.now() - ts) / 1000;
+                    writeSpeed = (totalWritten / 1024 / 1024) / el;
+                    readSpeed = (totalRead / 1024 / 1024) / el;
+                    
+                    updateUI('disknat', Math.min(el / duration, 1), null, `W: ${writeSpeed.toFixed(0)} MB/s | R: ${readSpeed.toFixed(0)} MB/s`);
+                    await new Promise(r => setTimeout(r, 10));
+                }
+
+                // Cleanup
+                await Neutralino.filesystem.removeFile(testFile);
+            } catch (e) {
+                console.error('Disk benchmark error:', e);
+            }
+
+            const avgSpeed = (writeSpeed + readSpeed) / 2;
+            rawResults.disknat = { writeSpeed, readSpeed, totalWritten, totalRead };
+            document.getElementById('tip-disk-write').textContent = `${writeSpeed.toFixed(1)} MB/s`;
+            document.getElementById('tip-disk-read').textContent = `${readSpeed.toFixed(1)} MB/s`;
+            document.getElementById('tip-disk-total').textContent = formatBytes(totalWritten + totalRead);
+            updateUI('disknat', 1, avgSpeed, `Final: W:${writeSpeed.toFixed(0)} R:${readSpeed.toFixed(0)} MB/s`);
+            return avgSpeed;
+        }
+
+        // Health Benchmark
+        async function benchmarkHealth(duration) {
+            document.getElementById('statusText').textContent = 'Running Health benchmark...';
+            const ts = performance.now();
+            let timerJitters = [], frameJitters = [], taskLatencies = [];
+            
+            while ((performance.now() - ts) / 1000 < duration) {
+                const t0 = performance.now(); await new Promise(r => setTimeout(r, 10)); timerJitters.push(Math.abs(performance.now() - t0 - 10));
+                const t1 = performance.now(); await Promise.resolve(); taskLatencies.push(performance.now() - t1);
+                const t2 = performance.now(); await new Promise(r => requestAnimationFrame(r)); frameJitters.push(Math.abs(performance.now() - t2 - 16.67));
+                const el = (performance.now() - ts) / 1000;
+                const avgT = timerJitters.reduce((a, b) => a + b, 0) / timerJitters.length;
+                const avgF = frameJitters.reduce((a, b) => a + b, 0) / frameJitters.length;
+                updateUI('health', Math.min(el / duration, 1), null, `Timer: ${avgT.toFixed(1)}ms | Frame: ${avgF.toFixed(1)}ms`);
+            }
+            
+            const avgT = timerJitters.reduce((a, b) => a + b, 0) / timerJitters.length;
+            const avgF = frameJitters.reduce((a, b) => a + b, 0) / frameJitters.length;
+            const avgL = taskLatencies.reduce((a, b) => a + b, 0) / taskLatencies.length;
+            
+            // Factor in process count for health score
+            let procPenalty = 0;
+            if (isNeutralino && nativeInfo.processCount) {
+                procPenalty = Math.max(0, (nativeInfo.processCount - 150) * 0.2); // Penalty for >150 processes
+            }
+            
+            const score = Math.max(0, ((Math.max(0, 100 - (avgT - 1) * 10) + Math.max(0, 100 - (avgF - 2) * 5) + Math.max(0, 100 - avgL * 20)) / 3 - procPenalty) * 2.5);
+            
+            rawResults.health = { timerJitter: avgT, frameJitter: avgF, taskLatency: avgL, processCount: nativeInfo.processCount };
+            document.getElementById('tip-health-timer').textContent = `${avgT.toFixed(2)}ms`;
+            document.getElementById('tip-health-frame').textContent = `${avgF.toFixed(2)}ms`;
+            document.getElementById('tip-health-task').textContent = `${avgL.toFixed(3)}ms`;
+            document.getElementById('tip-health-procs').textContent = nativeInfo.processCount || 'N/A';
+            updateUI('health', 1, score, `Jitter: ${avgT.toFixed(1)}ms | Health: ${(score / 2.5).toFixed(0)}%`);
+            return score;
+        }
+
+        // Native Memory Benchmark
+        async function benchmarkMemNative(duration) {
+            document.getElementById('statusText').textContent = 'Running Memory benchmark...';
+            if (!isNeutralino) {
+                updateUI('memnat', 1, 100, 'Native mode required');
+                return 100;
+            }
+
+            const ts = performance.now();
+            let samples = [];
+            
+            while ((performance.now() - ts) / 1000 < duration) {
+                const memInfo = await Neutralino.computer.getMemoryInfo();
+                const total = memInfo.physical.total;
+                const available = memInfo.physical.available;
+                const usagePercent = ((total - available) / total) * 100;
+                samples.push({ available, usagePercent });
+                
+                const el = (performance.now() - ts) / 1000;
+                updateUI('memnat', Math.min(el / duration, 1), null, `Avail: ${formatBytes(available)} | Used: ${usagePercent.toFixed(1)}%`);
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            const avgUsage = samples.reduce((a, b) => a + b.usagePercent, 0) / samples.length;
+            const avgAvailable = samples.reduce((a, b) => a + b.available, 0) / samples.length;
+            
+            // Score based on available memory percentage (more available = better)
+            const availablePercent = 100 - avgUsage;
+            const score = availablePercent * 1.43; // Scale to ~143 max
+            
+            rawResults.memnat = { avgUsage, avgAvailable, totalRam: nativeInfo.totalRam };
+            document.getElementById('tip-mem-total').textContent = formatBytes(nativeInfo.totalRam);
+            document.getElementById('tip-mem-avail').textContent = formatBytes(avgAvailable);
+            document.getElementById('tip-mem-usage').textContent = `${avgUsage.toFixed(1)}%`;
+            updateUI('memnat', 1, score, `Available: ${(100 - avgUsage).toFixed(1)}% | ${formatBytes(avgAvailable)}`);
+            return score;
+        }
+
+        // Network Benchmark
+        async function benchmarkNetwork(duration) {
+            document.getElementById('statusText').textContent = 'Running Network benchmark...';
+            const ts = performance.now(); let tb = 0, speeds = [], reqs = 0;
+            const urls = [{ url: 'https://speed.cloudflare.com/__down?bytes=100000', size: 100000 }, { url: 'https://speed.cloudflare.com/__down?bytes=500000', size: 500000 }];
+            
+            while ((performance.now() - ts) / 1000 < duration) {
+                const u = urls[reqs % urls.length];
+                try {
+                    const ctrl = new AbortController();
+                    const tid = setTimeout(() => ctrl.abort(), 5000);
+                    const fs = performance.now();
+                    const res = await fetch(u.url, { cache: 'no-store', signal: ctrl.signal });
+                    clearTimeout(tid);
+                    if (res.ok) { const blob = await res.blob(); const ft = (performance.now() - fs) / 1000; if (ft > 0.01) { tb += blob.size || u.size; speeds.push((blob.size || u.size) * 8 / 1000000 / ft); } }
+                } catch { }
+                reqs++;
+                const el = (performance.now() - ts) / 1000;
+                const avg = speeds.length ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0;
+                updateUI('network', Math.min(el / duration, 1), null, `Reqs: ${reqs} | ${formatNumber(tb / 1024)} KB | ${avg.toFixed(1)} Mbps`);
+                await new Promise(r => setTimeout(r, 100));
+            }
+            
+            const avg = speeds.length ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0;
+            const med = speeds.length ? speeds.sort((a, b) => a - b)[Math.floor(speeds.length / 2)] : 0;
+            rawResults.network = { avgSpeed: avg, medianSpeed: med, totalBytes: tb };
+            document.getElementById('tip-net-avg').textContent = `${avg.toFixed(1)} Mbps`;
+            document.getElementById('tip-net-med').textContent = `${med.toFixed(1)} Mbps`;
+            document.getElementById('tip-net-dl').textContent = `${formatNumber(tb / 1024)} KB`;
+            updateUI('network', 1, avg || 1, speeds.length ? `Final: ${avg.toFixed(1)} Mbps` : 'Network unavailable');
+            return avg || 1;
+        }
+
+        // History Management (using native storage when available)
+        async function loadHistory() {
+            try {
+                if (isNeutralino) {
+                    const data = await Neutralino.storage.getData('benchmarkHistory');
+                    return JSON.parse(data);
+                }
+            } catch { }
+            return JSON.parse(localStorage.getItem('benchmarkHistory') || '[]');
+        }
+
+        async function saveHistory(history) {
+            const data = JSON.stringify(history);
+            if (isNeutralino) {
+                try { await Neutralino.storage.setData('benchmarkHistory', data); } catch { }
+            }
+            localStorage.setItem('benchmarkHistory', data);
+        }
+
+        async function saveToHistory(totalScore, results) {
+            const history = await loadHistory();
+            history.push({ timestamp: Date.now(), totalScore, results: { ...results }, rawResults: { ...rawResults } });
+            while (history.length > 20) history.shift();
+            await saveHistory(history);
+            renderHistory(history);
+        }
+
+        function renderHistory(history) {
+            const container = document.getElementById('historyChart');
+            const section = document.getElementById('historySection');
+            if (!history || !history.length) { section.classList.remove('visible'); return; }
+            section.classList.add('visible');
+            container.innerHTML = '';
+            const maxScore = Math.max(...history.map(h => h.totalScore), 1000);
+            history.forEach(entry => {
+                const barHeight = (entry.totalScore / maxScore) * 80;
+                const date = new Date(entry.timestamp);
+                let tooltip = `<div style="font-weight:bold;margin-bottom:5px;">${formatNumber(entry.totalScore)} pts</div><div style="color:#888;font-size:0.65rem;">${date.toLocaleDateString()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}</div>`;
+                if (entry.results) {
+                    tooltip += '<div style="margin-top:5px;">';
+                    for (const [t, d] of Object.entries(entry.results)) if (SCORED_TESTS.includes(t)) tooltip += `<div class="tooltip-row"><span class="tooltip-label">${t.toUpperCase()}:</span><span class="tooltip-value">${d.normalized}</span></div>`;
+                    tooltip += '</div>';
+                }
+                const bar = document.createElement('div');
+                bar.className = 'history-bar-container';
+                bar.innerHTML = `<div class="history-score-label">${formatNumber(entry.totalScore)}</div><div class="history-bar" style="height:${barHeight}px;"></div><div class="history-date">${date.getMonth() + 1}/${date.getDate()}</div><div class="history-tooltip">${tooltip}</div>`;
+                container.appendChild(bar);
+            });
+        }
+
+        async function clearHistory() {
+            if (confirm('Clear all benchmark history?')) {
+                await saveHistory([]);
+                renderHistory([]);
+            }
+        }
+
+        async function startBenchmark() {
+            if (isRunning) return;
+            isRunning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = '⏳ Running...';
+            document.getElementById('finalScorePanel').classList.remove('visible');
+            results = {}; rawResults = {};
+
+            for (const t of TESTS) {
+                document.getElementById(`progress-${t}`).style.width = '0%';
+                document.getElementById(`score-${t}`).textContent = 'Waiting...';
+                document.getElementById(`score-${t}`).className = 'test-score';
+                const card = document.getElementById(`card-${t}`);
+                card.className = card.className.includes('native') ? 'test-card native' : 'test-card';
+            }
+
+            totalDuration = Math.max(5, Math.min(120, parseFloat(document.getElementById('duration').value) || 10));
+            const timePerTest = totalDuration / (TESTS.length - 1); // Network runs shorter
+            startTime = performance.now();
+
+            const interval = setInterval(() => {
+                const elapsed = (performance.now() - startTime) / 1000;
+                updateOverallProgress(elapsed);
+                if (elapsed >= totalDuration) clearInterval(interval);
+            }, 100);
+
+            await benchmarkCPU(timePerTest);
+            await benchmarkGPU(timePerTest);
+            await benchmarkRAM(timePerTest);
+            await benchmarkDisplay(timePerTest);
+            await benchmarkDiskNative(timePerTest);
+            await benchmarkHealth(timePerTest);
+            await benchmarkMemNative(timePerTest);
+            await benchmarkNetwork(timePerTest * 0.5);
+
+            clearInterval(interval);
+            updateOverallProgress(totalDuration);
+            showFinalScore();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '▶ Start Benchmark';
+            document.getElementById('statusText').textContent = 'Benchmark complete!';
+            isRunning = false;
+        }
+
+        function showFinalScore() {
+            let totalScore = 0;
+            const breakdown = document.getElementById('scoreBreakdown');
+            breakdown.innerHTML = '';
+
+            // Only show scored tests in breakdown (5 columns)
+            const displayTests = [...SCORED_TESTS, 'network'];
+            for (const t of displayTests) {
+                const r = results[t];
+                const score = r ? r.normalized : 0;
+                if (SCORED_TESTS.includes(t)) totalScore += score;
+                const item = document.createElement('div');
+                item.className = 'breakdown-item' + (SCORED_TESTS.includes(t) ? '' : ' excluded');
+                const names = { cpu: 'CPU', gpu: 'GPU', ram: 'RAM', display: 'Display', disknat: 'Disk', health: 'Health', memnat: 'Memory', network: 'Network' };
+                item.innerHTML = `<div class="breakdown-name">${names[t] || t.toUpperCase()}</div><div class="breakdown-score">${formatNumber(score)}</div>`;
+                breakdown.appendChild(item);
+            }
+
+            totalScore = Math.max(10, Math.min(1000, totalScore));
+            document.getElementById('finalScoreValue').textContent = formatNumber(totalScore);
+
+            const badge = document.getElementById('ratingBadge');
+            if (totalScore >= 800) { badge.textContent = '🏆 EXCELLENT'; badge.className = 'rating excellent'; }
+            else if (totalScore >= 600) { badge.textContent = '⭐ GREAT'; badge.className = 'rating great'; }
+            else if (totalScore >= 400) { badge.textContent = '👍 GOOD'; badge.className = 'rating good'; }
+            else if (totalScore >= 200) { badge.textContent = '📊 AVERAGE'; badge.className = 'rating average'; }
+            else { badge.textContent = '🔧 NEEDS UPGRADE'; badge.className = 'rating low'; }
+
+            document.getElementById('finalScorePanel').classList.add('visible');
+            saveToHistory(totalScore, results);
+        }
+
+        document.getElementById('duration').addEventListener('change', e => {
+            const v = Math.max(5, Math.min(120, parseFloat(e.target.value) || 10));
+            e.target.value = v;
+            document.getElementById('timeDisplay').textContent = `0.0s / ${v}.0s`;
+        });
+
+        // Initialize
+        initNeutralino().then(async () => {
+            const history = await loadHistory();
+            renderHistory(history);
+        });
+    </script>
+</body>
+</html>
